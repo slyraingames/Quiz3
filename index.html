@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot GDScript Quiz 3: Conditionals & Input</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .quiz-option {
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        }
+        .quiz-option.selected {
+            background-color: #3b82f6; /* bg-blue-600 */
+            border-color: #2563eb; /* border-blue-700 */
+            color: white;
+        }
+        .quiz-option.correct {
+            background-color: #22c55e; /* bg-green-500 */
+            border-color: #16a34a; /* border-green-600 */
+            color: white;
+        }
+        .quiz-option.incorrect {
+            background-color: #ef4444; /* bg-red-500 */
+            border-color: #dc2626; /* border-red-600 */
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4 sm:p-6">
+
+    <div id="quiz-container" class="w-full max-w-2xl bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8">
+        <h1 class="text-2xl sm:text-3xl font-bold text-center mb-2 text-blue-400">GDScript Quiz 3</h1>
+        <p class="text-center text-gray-400 mb-8">Conditional Logic & Input</p>
+
+        <div id="quiz-content">
+            <!-- Questions will be injected here by JavaScript -->
+        </div>
+
+        <div class="mt-8 text-center">
+            <button id="submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500/50">
+                Submit Answers
+            </button>
+        </div>
+
+        <div id="results-container" class="hidden mt-8 text-center p-6 bg-gray-700/50 rounded-lg">
+            <h2 class="text-2xl font-bold mb-2">Quiz Complete!</h2>
+            <p id="score-text" class="text-4xl font-bold text-green-400 mb-4"></p>
+            <p id="feedback-text" class="text-lg text-gray-300 mb-6"></p>
+            <button id="retry-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                Try Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "How do you check if the 'jump' action (defined in the Input Map) is currently being pressed?",
+                options: [
+                    "if Input.is_key_pressed('jump'):",
+                    "if Input.get_action('jump'):",
+                    "if Input.is_action_pressed('jump'):",
+                    "if Input.check_action('jump'):"
+                ],
+                answer: "if Input.is_action_pressed('jump'):"
+            },
+            {
+                question: "In an `if/elif/else` chain, when does the `else` block get executed?",
+                options: [
+                    "Always, after the `if` and `elif` blocks.",
+                    "Only when the `if` condition is true.",
+                    "Only when the `elif` condition is true.",
+                    "Only when all preceding `if` and `elif` conditions are false."
+                ],
+                answer: "Only when all preceding `if` and `elif` conditions are false."
+            },
+            {
+                question: "What is the primary purpose of an `if` statement in programming?",
+                options: [
+                    "To repeat a block of code multiple times.",
+                    "To store data in a named container.",
+                    "To execute a block of code only if a certain condition is true.",
+                    "To organize code into reusable blocks."
+                ],
+                answer: "To execute a block of code only if a certain condition is true."
+            },
+            {
+                question: "Consider this code: `var score = 100`. Which `if` statement will evaluate to true?",
+                options: [
+                    "if score > 100:",
+                    "if score == '100':",
+                    "if score < 100:",
+                    "if score >= 100:"
+                ],
+                answer: "if score >= 100:"
+            },
+            {
+                question: "If you want to check for a 'move_right' action, and if that's not pressed, then check for a 'move_left' action, what is the most appropriate structure?",
+                options: [
+                    "Two separate `if` statements.",
+                    "An `if` statement followed by an `elif` statement.",
+                    "An `if` statement followed by an `else` statement.",
+                    "A single `if` statement with an `and` operator."
+                ],
+                answer: "An `if` statement followed by an `elif` statement."
+            }
+        ];
+
+        const quizContent = document.getElementById('quiz-content');
+        const submitBtn = document.getElementById('submit-btn');
+        const resultsContainer = document.getElementById('results-container');
+        const scoreText = document.getElementById('score-text');
+        const feedbackText = document.getElementById('feedback-text');
+        const retryBtn = document.getElementById('retry-btn');
+
+        let selectedAnswers = new Array(quizData.length).fill(null);
+
+        function renderQuiz() {
+            quizContent.innerHTML = '';
+            selectedAnswers.fill(null);
+            quizData.forEach((item, questionIndex) => {
+                const questionEl = document.createElement('div');
+                questionEl.className = 'mb-8';
+                
+                const questionText = document.createElement('p');
+                questionText.className = 'text-lg sm:text-xl font-semibold mb-4 text-gray-200';
+                questionText.textContent = `${questionIndex + 1}. ${item.question}`;
+                questionEl.appendChild(questionText);
+
+                const optionsEl = document.createElement('div');
+                optionsEl.className = 'grid grid-cols-1 sm:grid-cols-2 gap-3';
+                questionEl.appendChild(optionsEl);
+
+                item.options.forEach((option, optionIndex) => {
+                    const optionBtn = document.createElement('button');
+                    optionBtn.className = 'quiz-option w-full text-left p-4 border-2 border-gray-600 rounded-lg hover:bg-gray-700 hover:border-blue-500 focus:outline-none';
+                    optionBtn.textContent = option;
+                    optionBtn.onclick = () => selectOption(questionIndex, option, optionBtn);
+                    optionsEl.appendChild(optionBtn);
+                });
+
+                quizContent.appendChild(questionEl);
+            });
+            resultsContainer.classList.add('hidden');
+            submitBtn.classList.remove('hidden');
+            quizContent.classList.remove('hidden');
+        }
+
+        function selectOption(questionIndex, option, btnEl) {
+            selectedAnswers[questionIndex] = option;
+            const parent = btnEl.parentElement;
+            parent.querySelectorAll('.quiz-option').forEach(btn => btn.classList.remove('selected'));
+            btnEl.classList.add('selected');
+        }
+
+        function showResults() {
+            let score = 0;
+            const questionElements = quizContent.querySelectorAll('.mb-8');
+
+            questionElements.forEach((questionEl, index) => {
+                const correctAnswer = quizData[index].answer;
+                const userAnswer = selectedAnswers[index];
+                const optionButtons = questionEl.querySelectorAll('.quiz-option');
+
+                optionButtons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.classList.remove('selected');
+                    if (btn.textContent === correctAnswer) {
+                        btn.classList.add('correct');
+                    } else if (btn.textContent === userAnswer && userAnswer !== correctAnswer) {
+                        btn.classList.add('incorrect');
+                    }
+                });
+
+                if (userAnswer === correctAnswer) {
+                    score++;
+                }
+            });
+
+            const percentage = (score / quizData.length) * 100;
+            scoreText.textContent = `${score} / ${quizData.length}`;
+            
+            if (percentage === 100) {
+                feedbackText.textContent = "Perfect! Your logic is undeniable. You're ready for the next step.";
+                scoreText.style.color = '#4ade80';
+            } else if (percentage >= 80) {
+                feedbackText.textContent = "Very logical! You have a great handle on making decisions in code.";
+                scoreText.style.color = '#60a5fa';
+            } else if (percentage >= 60) {
+                feedbackText.textContent = "A good start! Go over Module 3 again to master the flow of logic.";
+                scoreText.style.color = '#facc15';
+            } else {
+                feedbackText.textContent = "Making games interactive is tricky. Review Module 3 and give it another shot!";
+                scoreText.style.color = '#f87171';
+            }
+
+            submitBtn.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+        }
+
+        submitBtn.addEventListener('click', () => {
+            if (selectedAnswers.includes(null)) {
+                alert("Please answer all questions before submitting.");
+                return;
+            }
+            showResults();
+        });
+        
+        retryBtn.addEventListener('click', () => {
+            const questionElements = quizContent.querySelectorAll('.mb-8');
+            questionElements.forEach(q => {
+                 const optionButtons = q.querySelectorAll('.quiz-option');
+                 optionButtons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('correct', 'incorrect');
+                 });
+            });
+            renderQuiz();
+        });
+
+        renderQuiz();
+    </script>
+</body>
+</html>
